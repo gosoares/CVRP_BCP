@@ -1,0 +1,92 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "CMAKE_CXX_STANDARD_REQUIRED": "YES",
+                "CMAKE_CXX_STANDARD": "23"
+            }
+        },
+        {
+            "name": "base-linux",
+            "hidden": true,
+            "inherits": "base",
+            "cacheVariables": {
+                "CPLEX_DIR": "/opt/ibm/ILOG/CPLEX_Studio2211",
+                "CPLEX_ARCH": "x86-64_linux"
+            },
+            "condition": {
+                "lhs": "${hostSystemName}",
+                "type": "equals",
+                "rhs": "Linux"
+            }
+        },
+        {
+            "name": "base-mac",
+            "hidden": true,
+            "inherits": "base",
+            "cacheVariables": {
+                "CPLEX_DIR": "/Applications/CPLEX_Studio_Community2211",
+                "CPLEX_ARCH": "x86-64_osx"
+            },
+            "condition": {
+                "lhs": "${hostSystemName}",
+                "type": "equals",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "base-debug",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wno-sign-compare"
+            }
+        },
+        {
+            "name": "base-release",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_FLAGS": "-O3"
+            }
+        },
+        {
+            "name": "linux-debug",
+            "displayName": "Debug (Linux)",
+            "inherits": [
+                "base-linux",
+                "base-debug"
+            ]
+        },
+        {
+            "name": "linux-release",
+            "displayName": "Release (Linux)",
+            "inherits": [
+                "base-linux",
+                "base-release"
+            ]
+        },
+        {
+            "name": "osx-debug",
+            "displayName": "Debug (macOS)",
+            "inherits": [
+                "base-mac",
+                "base-debug"
+            ]
+        },
+        {
+            "name": "osx-release",
+            "displayName": "Release (macOS)",
+            "inherits": [
+                "base-mac",
+                "base-release"
+            ]
+        }
+    ]
+}
