@@ -13,5 +13,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(argparse)
 
 add_executable(CVRP src/main.cpp
+    src/Instance.h src/Instance.cpp
 )
 target_link_libraries(CVRP ilocplex concert cplex m pthread argparse)
