@@ -21,6 +21,7 @@ class Instance {
     int64_t vehicleCapacity;
     std::vector<std::vector<int64_t> > distances;
     std::vector<int64_t> demands;
+    int64_t demandsGcd;  // Greatest common divisor of demands and vehicle capacity
 
     void readCoordinatesListInstance(std::ifstream& file);
     void readDistanceMatrixInstance(std::ifstream& file);

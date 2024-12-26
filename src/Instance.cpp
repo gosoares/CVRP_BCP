@@ -5,6 +5,13 @@
 #include <fstream>
 #include <iostream>
 
+int64_t gcd(int64_t a, int64_t b) {
+    if (b == 0) {
+        return a;
+    }
+    return gcd(b, a % b);
+}
+
 Instance::Instance(const std::string& filename) {
     std::ifstream file(filename, std::ios::in);
     if (!file.is_open()) {
@@ -45,6 +52,17 @@ Instance::Instance(const std::string& filename) {
     assert(data == "-1");
     file >> data;
     assert(data == "EOF");
+
+    // normalize demands by the greatest common divisor
+    this->demandsGcd = this->vehicleCapacity;
+    for (int64_t i = 0; i < this->V; i++) {
+        this->demandsGcd = gcd(this->demandsGcd, this->demands[i]);
+    }
+
+    this->vehicleCapacity /= this->demandsGcd;
+    for (int64_t i = 0; i < this->V; i++) {
+        this->demands[i] /= this->demandsGcd;
+    }
 }
 
 void Instance::readCoordinatesListInstance(std::ifstream& file) {
@@ -112,6 +130,7 @@ void Instance::readDistanceMatrixInstance(std::ifstream& file) {
 
     // Read demands
     file >> data;  // DEMAND_SECTION
+    std::cout << data << std::endl;
     assert(data == "DEMAND_SECTION");
 
     for (int64_t i = 0; i < this->V; i++) {
