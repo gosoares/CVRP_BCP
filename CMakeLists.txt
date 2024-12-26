@@ -14,5 +14,6 @@ FetchContent_MakeAvailable(argparse)
 
 add_executable(CVRP src/main.cpp
     src/Instance.h src/Instance.cpp
+    src/Pricing.h src/Pricing.cpp
 )
 target_link_libraries(CVRP ilocplex concert cplex m pthread argparse)
