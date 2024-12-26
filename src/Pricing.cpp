@@ -9,7 +9,7 @@ Pricing::Pricing(const Instance& instance)
     , minCost(C + 1, std::vector<double>(V))
     , before(C + 1, std::vector<int64_t>(V)) {}
 
-void Pricing::solve(const std::vector<std::vector<double> >& prices) {
+void Pricing::solve(const std::vector<double>& prices) {
     this->initialize();
     int64_t totalDemand;
     double totalCost;
@@ -20,7 +20,7 @@ void Pricing::solve(const std::vector<std::vector<double> >& prices) {
             for (int64_t w = 0; w < this->V; w++) {
                 if (v == w || w == this->before[d][v]) continue;  // eliminate 2-cycle q-routes
                 totalDemand = d + this->instance.getDemand(w);
-                totalCost = this->minCost[d][v] + prices[v][w];
+                totalCost = this->minCost[d][v] + prices[instance.getEdgeId(v, w)];
 
                 if (totalDemand <= this->C && totalCost < this->minCost[totalDemand][w]) {
                     this->minCost[totalDemand][w] = totalCost;

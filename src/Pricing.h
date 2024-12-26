@@ -11,7 +11,7 @@ class Pricing {
    public:
     Pricing(const Instance& instance);
 
-    void solve(const std::vector<std::vector<double> >& prices);
+    void solve(const std::vector<double>& prices);
 
     double getMinCost(int64_t d, int64_t v) const { return this->minCost[d][v]; }
 
