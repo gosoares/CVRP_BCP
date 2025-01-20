@@ -1,123 +1,127 @@
 #include "MasterModel.h"
 
 #include <format>
+#include <map>
 #include <string>
 
-EdgeConstraints::EdgeConstraints(const IloCplex& cplex)
-    : cplex(cplex)
-    , constraints(cplex.getEnv())
-    , duals(cplex.getEnv()) {}
+#define artificialCost 9999999
 
-void EdgeConstraints::add(const IloRange& constraint) {
-    this->constraints.add(constraint);
-    this->duals.add(0);
+IloNumVar& MasterModel::newArtificial() {
+    IloNumVar a(this->objective(artificialCost));
+    a.setName(std::format("a_{}", this->artificials.getSize() + 1).c_str());
+    this->artificials.add(a);
+    return this->artificials[this->artificials.getSize() - 1];
 }
 
-const IloNumArray& EdgeConstraints::getDuals() const {
-    this->cplex.getDuals(this->duals, this->constraints);
-    return this->duals;
-}
-
-MasterModel::MasterModel(IloEnv& env, const Instance& instance)
+MasterModel::MasterModel(const Instance& instance)
     : instance(instance)
-    , edgesLength(env, instance.getNbEdges())
-    , env(env)
+    , env()
     , model(env)
     , cplex(model)
     , objective(IloAdd(model, IloMinimize(env)))
-    , visitedOnceConstraints(IloAdd(model, IloRangeArray(env, instance.getN(), 2, 2)))
-    , nbVehiclesConstraint(IloAdd(model, IloRange(env, 2 * instance.getNbVehicles(), 2 * instance.getNbVehicles())))
-    , capacityConstraints(IloAdd(model, IloRangeArray(env)))
-    , maxTraversalConstraints(
-          IloAdd(model, IloRangeArray(env, instance.getNbEdges() - instance.getN(), -IloInfinity, 1)))
+    , constraints(env)
+    , edgeConstraints(instance.getNbEdges(), std::vector<int64_t>())
     , lambdas(env)
+    , edgeLambdas(instance.getNbEdges(), std::vector<int64_t>())
     , prices(env, instance.getNbEdges())
-    , artificials(env, 2, 0, IloInfinity)
-    , solution()
-    , edgeConstraints(instance.getNbEdges(), EdgeConstraints(this->cplex)) {
+    , artificials(env)
+    , solution() {
     this->cplex.setOut(env.getNullStream());
     this->cplex.setParam(IloCplex::Param::Threads, 1);
 
-    // create artificial variables
-    artificials[0].setName("a_1");
-    for (int64_t i = 0; i < instance.getN(); ++i) {
-        this->visitedOnceConstraints[i].setLinearCoef(artificials[0], 2);
-    }
-    artificials[1].setName("a_2");
-    this->nbVehiclesConstraint.setLinearCoef(artificials[1], 2);
+    // ensures that each client is visited exactly once
+    for (int64_t v : this->instance.getClientIdxs()) {
+        this->constraints.add(IloAdd(this->model, 2 * this->newArtificial() == 2));
 
-    // populate edgesLength
-    for (int64_t e = 0; e < instance.getNbEdges(); e++) {
-        edgesLength[e] = instance.getDistance(e);
-    }
-
-    // populate edgeConstraints
-    int64_t e = 0;  // edge id
-
-    // depot edges {0, j}
-    for (int64_t j = 1; j < this->instance.getV(); j++) {
-        this->edgeConstraints[e].add(this->visitedOnceConstraints[j - 1]);
-        this->edgeConstraints[e].add(this->nbVehiclesConstraint);
-        e++;
-    }
-
-    // customer edges {i, j}
-    int64_t maxTraversalCId = 0;
-    for (int64_t i = 1; i < this->instance.getV(); i++) {
-        for (int64_t j = i + 1; j < this->instance.getV(); j++) {
-            this->edgeConstraints[e].add(this->visitedOnceConstraints[i - 1]);
-            this->edgeConstraints[e].add(this->visitedOnceConstraints[j - 1]);
-            this->edgeConstraints[e].add(this->maxTraversalConstraints[maxTraversalCId++]);
-            e++;
+        size_t consId = this->constraints.getSize() - 1;
+        for (int64_t w = 0; w < instance.getV(); w++) {
+            if (v == w) continue;
+            this->edgeConstraints[instance.getEdgeId(v, w)].push_back(consId);
         }
+    }
+
+    // ensures that K vehicles must leave and enter the depot
+    this->constraints.add(IloAdd(this->model, 2 * this->newArtificial() == 2 * instance.getNbVehicles()));
+    size_t consId = this->constraints.getSize() - 1;
+    for (int64_t w : this->instance.getClientIdxs()) {
+        this->edgeConstraints[instance.getEdgeId(0, w)].push_back(consId);
+    }
+
+    // ensures that each edge that do not go through the depot is visited at most once
+    for (int64_t e : this->instance.getEdgeIdxs()) {
+        std::pair<int64_t, int64_t> edge = instance.getEdge(e);
+        if (edge.first == 0 || edge.second == 0) continue;
+
+        this->constraints.add(IloAdd(this->model, this->newArtificial() <= 1));
+        size_t consId = this->constraints.getSize() - 1;
+        this->edgeConstraints[e].push_back(consId);
     }
 }
 
 MasterModel::~MasterModel() {
-    cplex.end();
     model.end();
+    cplex.end();
     objective.end();
-    visitedOnceConstraints.end();
-    nbVehiclesConstraint.end();
-    capacityConstraints.end();
-    maxTraversalConstraints.end();
+    constraints.end();
     lambdas.end();
     prices.end();
     artificials.end();
 }
 
-void MasterModel::solve() { this->cplex.solve(); }
+void MasterModel::solve() {
+    this->cplex.solve();
+    this->cplex.exportModel("out/master.lp");
+}
 
-void MasterModel::addColumn(const IloNumArray& qRoute) {
-    IloNumVar lambda(objective(IloScalProd(this->edgesLength, qRoute)));
-    lambda.setName(std::format("l_{}", this->lambdas.getSize()).c_str());
-    // TODO
-    // IloNumVar lambda(objective(1) + constraints(column));
-    // lambda.setName(std::format("l_{}", this->lambdas.getSize()).c_str());
-    // this->lambdas.add(lambda);
+void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {
+    int64_t objCoef = 0;
+    std::map<int64_t, int64_t> edgesCount;
+    for (int64_t e : qRouteEdges) {
+        objCoef += this->instance.getDistance(e);
+
+        edgesCount.try_emplace(e, 0);
+        edgesCount[e]++;
+    }
+
+    int64_t lambdaIdx = this->lambdas.getSize();
+    IloNumVar lambda(objective(objCoef));
+    lambda.setName(std::format("l_{}", lambdaIdx).c_str());
+    this->lambdas.add(lambda);
+
+    for (const auto& el : edgesCount) {
+        this->edgeLambdas[el.first].push_back(lambdaIdx);
+        for (auto c : this->edgeConstraints[el.first]) {
+            this->constraints[c].setLinearCoef(lambda, el.second);
+        }
+    }
 }
 
 const std::vector<double>& MasterModel::getSolution() {
     this->solution.resize(this->lambdas.getSize());
-    for (int i = 0; i < this->lambdas.getSize(); ++i) {
+    for (size_t i = 0; i < this->lambdas.getSize(); ++i) {
         this->solution[i] = this->cplex.getValue(this->lambdas[i]);
     }
     return solution;
 }
 
 const IloNumArray& MasterModel::getPrices() {
-    for (int e = 0; e < this->instance.getNbEdges(); e++) {
+    for (size_t e = 0; e < this->instance.getNbEdges(); e++) {
         prices[e] = instance.getDistance(e);
-        const IloNumArray& duals = this->edgeConstraints[e].getDuals();
-        for (int i = 0; i < duals.getSize(); i++) {
-            prices[e] -= duals[i];
+
+        for (size_t c : this->edgeConstraints[e]) {
+            prices[e] -= cplex.getDual(constraints[c]);
         }
     }
+
+    return prices;
 }
 
 double MasterModel::getObjectiveValue() const { return this->cplex.getValue(this->objective); }
 
 bool MasterModel::isInfeasible() const {
-    return this->cplex.getStatus() == IloAlgorithm::Infeasible || this->cplex.getValue(this->artificials[0]) > 1e-6 ||
-           this->cplex.getValue(this->artificials[1]) > 1e-6;
+    if (this->cplex.getStatus() == IloAlgorithm::Infeasible) return true;
+    for (int i = 0; i < this->artificials.getSize(); i++) {
+        if (this->cplex.getValue(this->artificials[i]) > 1e-6) return true;
+    }
+    return false;
 }
