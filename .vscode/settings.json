@@ -99,6 +99,12 @@
         "span": "cpp",
         "cinttypes": "cpp",
         "any": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "condition_variable": "cpp",
+        "csignal": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp"
     },
 }

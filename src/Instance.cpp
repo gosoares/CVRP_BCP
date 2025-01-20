@@ -4,6 +4,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 
 int64_t gcd(int64_t a, int64_t b) {
     if (b == 0) {
@@ -67,21 +68,29 @@ Instance::Instance(const std::string& filename) {
     file >> data;
     assert(data == "EOF");
 
+    // Populate iterators
+    this->clientIdxs.resize(this->N);
+    std::iota(this->clientIdxs.begin(), this->clientIdxs.end(), 1);
+    this->vertexIdxs.resize(this->V);
+    std::iota(this->vertexIdxs.begin(), this->vertexIdxs.end(), 0);
+    this->edgeIdxs.resize(this->edges.size());
+    std::iota(this->edgeIdxs.begin(), this->edgeIdxs.end(), 0);
+
     // Calculate number of vehicles as 2*minVehicles where minVehicles = ceil(sum(demands)/vehicleCapacity)
     int64_t sumDemands = 0;
-    for (int64_t i = 0; i < this->V; i++) {
-        sumDemands += this->demands[i];
+    for (int64_t v : this->getVertexIdxs()) {
+        sumDemands += this->demands[v];
     }
     this->nbVehicles = 2 * ceil(sumDemands / this->vehicleCapacity);
 
     // normalize demands by the greatest common divisor
     this->demandsGcd = this->vehicleCapacity;
-    for (int64_t i = 0; i < this->V; i++) {
-        this->demandsGcd = gcd(this->demandsGcd, this->demands[i]);
+    for (int64_t d : this->demands) {
+        this->demandsGcd = gcd(this->demandsGcd, d);
     }
     this->vehicleCapacity /= this->demandsGcd;
-    for (int64_t i = 0; i < this->V; i++) {
-        this->demands[i] /= this->demandsGcd;
+    for (int64_t v : this->getVertexIdxs()) {
+        this->demands[v] /= this->demandsGcd;
     }
 }
 
@@ -102,12 +111,6 @@ void Instance::readCoordinatesListInstance(std::ifstream& file) {
         file >> id;
         file >> X[id - 1];
         file >> Y[id - 1];
-    }
-
-    // Create edges
-    for (int64_t i = 1; i < this->V; i++) {
-        for (int64_t j = 0; j < i; j++) {
-        }
     }
 
     // Calculate euclidean distances
@@ -137,7 +140,7 @@ void Instance::readDistanceMatrixInstance(std::ifstream& file) {
     file >> data;  // EDGE_WEIGHT_SECTION
     assert(data == "EDGE_WEIGHT_SECTION");
 
-    for (int64_t i = 0, d; i < this->V; i++) {
+    for (int64_t i = 1, d; i < this->V; i++) {
         for (int64_t j = 0; j < i; j++) {
             file >> d;
             this->edges.emplace_back(i, j);

@@ -28,6 +28,11 @@ class Instance {
     const std::vector<std::pair<int64_t, int64_t> >& getEdges() const { return this->edges; }
     int64_t getEdgeId(int64_t i, int64_t j) const { return this->edgeIds[i][j]; };
 
+    // for iteration purposes
+    const std::vector<int64_t>& getClientIdxs() const { return this->clientIdxs; }
+    const std::vector<int64_t>& getVertexIdxs() const { return this->vertexIdxs; }
+    const std::vector<int64_t>& getEdgeIdxs() const { return this->edgeIdxs; }
+
    private:
     int64_t V;           // Number of vertices (depot + V-1 customers)
     int64_t N;           // Number of customers = V-1
@@ -40,6 +45,11 @@ class Instance {
 
     std::vector<int64_t> demands;
     int64_t demandsGcd;  // Greatest common divisor of demands and vehicle capacity
+
+    // for iteration purposes
+    std::vector<int64_t> clientIdxs;
+    std::vector<int64_t> vertexIdxs;
+    std::vector<int64_t> edgeIdxs;
 
     void readCoordinatesListInstance(std::ifstream& file);
     void readDistanceMatrixInstance(std::ifstream& file);
