@@ -105,6 +105,7 @@
         "list": "cpp",
         "unordered_set": "cpp",
         "semaphore": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "codecvt": "cpp"
     },
 }

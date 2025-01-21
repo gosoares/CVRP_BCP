@@ -51,7 +51,6 @@ Instance::Instance(const std::string& filename) {
 
     // Read demands
     file >> data;  // DEMAND_SECTION
-    std::cout << data << std::endl;
     assert(data == "DEMAND_SECTION");
 
     for (int64_t i = 0, id; i < this->V; i++) {

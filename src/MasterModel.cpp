@@ -31,9 +31,9 @@ MasterModel::MasterModel(const Instance& instance)
 
     // ensures that each client is visited exactly once
     for (int64_t v : this->instance.getClientIdxs()) {
-        this->constraints.add(IloAdd(this->model, 2 * this->newArtificial() == 2));
+        this->constraints.add(IloAdd(this->model, this->newArtificial() == 2));
 
-        size_t consId = this->constraints.getSize() - 1;
+        int64_t consId = this->constraints.getSize() - 1;
         for (int64_t w = 0; w < instance.getV(); w++) {
             if (v == w) continue;
             this->edgeConstraints[instance.getEdgeId(v, w)].push_back(consId);
@@ -41,8 +41,8 @@ MasterModel::MasterModel(const Instance& instance)
     }
 
     // ensures that K vehicles must leave and enter the depot
-    this->constraints.add(IloAdd(this->model, 2 * this->newArtificial() == 2 * instance.getNbVehicles()));
-    size_t consId = this->constraints.getSize() - 1;
+    this->constraints.add(IloAdd(this->model, this->newArtificial() == 2 * instance.getNbVehicles()));
+    int64_t consId = this->constraints.getSize() - 1;
     for (int64_t w : this->instance.getClientIdxs()) {
         this->edgeConstraints[instance.getEdgeId(0, w)].push_back(consId);
     }
@@ -53,7 +53,7 @@ MasterModel::MasterModel(const Instance& instance)
         if (edge.first == 0 || edge.second == 0) continue;
 
         this->constraints.add(IloAdd(this->model, this->newArtificial() <= 1));
-        size_t consId = this->constraints.getSize() - 1;
+        int64_t consId = this->constraints.getSize() - 1;
         this->edgeConstraints[e].push_back(consId);
     }
 }
@@ -68,10 +68,7 @@ MasterModel::~MasterModel() {
     artificials.end();
 }
 
-void MasterModel::solve() {
-    this->cplex.solve();
-    this->cplex.exportModel("out/master.lp");
-}
+void MasterModel::solve() { this->cplex.solve(); }
 
 void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {
     int64_t objCoef = 0;
@@ -98,17 +95,17 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {
 
 const std::vector<double>& MasterModel::getSolution() {
     this->solution.resize(this->lambdas.getSize());
-    for (size_t i = 0; i < this->lambdas.getSize(); ++i) {
+    for (int64_t i = 0; i < this->lambdas.getSize(); ++i) {
         this->solution[i] = this->cplex.getValue(this->lambdas[i]);
     }
     return solution;
 }
 
 const IloNumArray& MasterModel::getPrices() {
-    for (size_t e = 0; e < this->instance.getNbEdges(); e++) {
+    for (int64_t e = 0; e < this->instance.getNbEdges(); e++) {
         prices[e] = instance.getDistance(e);
 
-        for (size_t c : this->edgeConstraints[e]) {
+        for (int64_t c : this->edgeConstraints[e]) {
             prices[e] -= cplex.getDual(constraints[c]);
         }
     }

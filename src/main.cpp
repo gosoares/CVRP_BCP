@@ -1,15 +1,7 @@
-#include <ilcplex/ilocplex.h>
-
 #include <argparse/argparse.hpp>
-#include <cassert>
-#include <format>
-#include <iostream>
-#include <random>
-#include <vector>
 
+#include "BranchAndPrice.h"
 #include "Instance.h"
-#include "MasterModel.h"
-#include "Pricing.h"
 
 int main(int argc, char** argv) {
     argparse::ArgumentParser program("BinPacking");
@@ -23,13 +15,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    Instance instance(program.get("instance"));
-
-    std::cout << "V: " << instance.getV() << std::endl;
-    std::cout << "Vehicle capacity: " << instance.getVehicleCapacity() << std::endl;
-
-    MasterModel master(instance);
-    master.solve();
+    const Instance instance(program.get("instance"));
+    BranchAndPrice branchAndPrice(instance);
+    branchAndPrice.solve();
 
     return 0;
 }
