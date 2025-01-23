@@ -75,12 +75,9 @@ Instance::Instance(const std::string& filename) {
     this->edgeIdxs.resize(this->edges.size());
     std::iota(this->edgeIdxs.begin(), this->edgeIdxs.end(), 0);
 
-    // Calculate number of vehicles as 2*minVehicles where minVehicles = ceil(sum(demands)/vehicleCapacity)
-    int64_t sumDemands = 0;
-    for (int64_t v : this->getVertexIdxs()) {
-        sumDemands += this->demands[v];
-    }
-    this->nbVehicles = 2 * ceil(sumDemands / this->vehicleCapacity);
+    // Get number of vehicles from filename
+    this->nbVehicles = std::stoll(
+        filename.substr(filename.find_last_of('-') + 2, filename.find_last_of('.') - filename.find_last_of('-') - 2));
 
     // normalize demands by the greatest common divisor
     this->demandsGcd = this->vehicleCapacity;

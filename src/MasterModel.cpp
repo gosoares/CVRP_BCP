@@ -34,7 +34,7 @@ MasterModel::MasterModel(const Instance& instance)
         this->constraints.add(IloAdd(this->model, this->newArtificial() == 2));
 
         int64_t consId = this->constraints.getSize() - 1;
-        for (int64_t w = 0; w < instance.getV(); w++) {
+        for (int64_t w : this->instance.getVertexIdxs()) {
             if (v == w) continue;
             this->edgeConstraints[instance.getEdgeId(v, w)].push_back(consId);
         }
