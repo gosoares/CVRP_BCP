@@ -70,7 +70,7 @@ MasterModel::~MasterModel() {
 
 void MasterModel::solve() { this->cplex.solve(); }
 
-void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {
+void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO need/can i optimize it?
     int64_t objCoef = 0;
     std::map<int64_t, int64_t> edgesCount;
     for (int64_t e : qRouteEdges) {
@@ -85,11 +85,18 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {
     lambda.setName(std::format("l_{}", lambdaIdx).c_str());
     this->lambdas.add(lambda);
 
+    std::map<int64_t, int64_t> constraintCoef;
+
     for (const auto& el : edgesCount) {
         this->edgeLambdas[el.first].push_back(lambdaIdx);
         for (auto c : this->edgeConstraints[el.first]) {
-            this->constraints[c].setLinearCoef(lambda, el.second);
+            constraintCoef.try_emplace(c, 0);
+            constraintCoef[c] += el.second;
         }
+    }
+
+    for (const auto& el : constraintCoef) {
+        this->constraints[el.first].setLinearCoef(lambda, el.second);
     }
 }
 

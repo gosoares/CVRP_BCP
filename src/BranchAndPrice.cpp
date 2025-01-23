@@ -12,23 +12,8 @@ void BranchAndPrice::solve() {
         this->masterModel.solve();
         const IloNumArray& prices = this->masterModel.getPrices();
 
-        std::cout << "Prices: ";
-        for (int64_t e = 0; e < this->instance.getNbEdges(); e++) {
-            std::cout << prices[e] << " ";
-        }
-        std::cout << std::endl << std::endl;
-
         this->pricing.solve(prices);
         const std::vector<std::vector<int64_t> >& qPaths = this->pricing.getSolutionQPaths();
-
-        // std::cout << "QPaths: " << std::endl;
-        // for (const auto& qPath : qPaths) {
-        //     for (int64_t e : qPath) {
-        //         std::cout << e << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
-        // std::cout << std::endl << std::endl << std::endl;
 
         if (qPaths.empty()) break;
 
@@ -37,5 +22,11 @@ void BranchAndPrice::solve() {
         }
     }
 
+    // std::cout << "lambdas.size: " << this->masterModel.lambdas.getSize() << std::endl;
+    // for (int64_t i = 0; i < this->masterModel.lambdas.getSize(); ++i) {
+    //     if (this->masterModel.cplex.getValue(this->masterModel.lambdas[i]) > 1e-6)
+    //         std::cout << "lambda[" << i << "]: " << this->masterModel.cplex.getValue(this->masterModel.lambdas[i])
+    //                   << std::endl;
+    // }
     std::cout << "Objective value: " << this->masterModel.getObjectiveValue() << std::endl;
 }
