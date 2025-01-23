@@ -61,7 +61,7 @@ void Pricing::solve(const IloNumArray& prices) {
         }
 
         // if it has a negative reduced cost, add it to the list of negative reduced cost paths
-        if (bestCost > -1e-6) return;
+        if (bestCost > -1e-6) continue;
 
         this->solutionQPaths.emplace_back();
         auto& qPathEdges = this->solutionQPaths.back();
