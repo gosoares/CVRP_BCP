@@ -22,10 +22,11 @@ MasterModel::MasterModel(const Instance& instance)
     , constraints(env)
     , edgeConstraints(instance.getNbEdges(), std::vector<int64_t>())
     , lambdas(env)
-    , edgeLambdas(instance.getNbEdges(), std::vector<int64_t>())
+    , edgeLambdas(instance.getNbEdges(), std::vector<std::pair<int64_t, int64_t> >())
     , prices(env, instance.getNbEdges())
     , artificials(env)
-    , solution() {
+    , solution()
+    , originalSolution(instance.getNbEdges()) {
     this->cplex.setOut(env.getNullStream());
     this->cplex.setParam(IloCplex::Param::Threads, 1);
 
@@ -88,7 +89,7 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
     std::map<int64_t, int64_t> constraintCoef;
 
     for (const auto& el : edgesCount) {
-        this->edgeLambdas[el.first].push_back(lambdaIdx);
+        this->edgeLambdas[el.first].push_back(std::make_pair(lambdaIdx, el.second));
         for (auto c : this->edgeConstraints[el.first]) {
             constraintCoef.try_emplace(c, 0);
             constraintCoef[c] += el.second;
@@ -100,12 +101,49 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
     }
 }
 
+void MasterModel::addCut(const std::vector<int64_t>& edges, double rhs) {
+    std::map<int64_t, int64_t> lambdaCoefs;
+
+    for (int64_t e : edges) {
+        for (const auto& el : this->edgeLambdas[e]) {
+            lambdaCoefs.try_emplace(el.first, 0);
+            lambdaCoefs[el.first] += el.second;
+        }
+    }
+
+    IloExpr expr(env);
+    for (const auto& el : lambdaCoefs) {
+        expr += el.second * this->lambdas[el.first];
+    }
+    this->constraints.add(IloAdd(this->model, expr <= rhs));
+    expr.end();
+
+    int64_t consId = this->constraints.getSize() - 1;
+    for (int64_t e : edges) {
+        this->edgeConstraints[e].push_back(consId);
+    }
+}
+
 const std::vector<double>& MasterModel::getSolution() {
     this->solution.resize(this->lambdas.getSize());
     for (int64_t i = 0; i < this->lambdas.getSize(); ++i) {
         this->solution[i] = this->cplex.getValue(this->lambdas[i]);
     }
     return solution;
+}
+
+const std::vector<double>& MasterModel::getOriginalSolution() {
+    const auto& solution = this->getSolution();
+
+    for (int64_t e : this->instance.getEdgeIdxs()) {
+        this->originalSolution[e] = 0;
+
+        for (const auto& el : this->edgeLambdas[e]) {
+            this->originalSolution[e] += solution[el.first] * el.second;
+        }
+    }
+
+    return this->originalSolution;
 }
 
 const IloNumArray& MasterModel::getPrices() {

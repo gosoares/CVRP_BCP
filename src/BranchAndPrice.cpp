@@ -1,16 +1,35 @@
 #include "BranchAndPrice.h"
 
+#include "CapacityCuts.h"
+
 BranchAndPrice::BranchAndPrice(const Instance& instance)
     : instance(instance)
     , masterModel(instance)
-    , pricing(instance) {}
+    , pricing(instance)
+    , capacityCuts(instance, masterModel) {}
 
 BranchAndPrice::~BranchAndPrice() {}
 
 void BranchAndPrice::solve() {
-    while (true) {
+    do {
+        this->solveColumnGeneration();
+    } while (false);  // !fixme capacity cuts are not working
+    // } while (this->capacityCuts.separate(this->masterModel.getOriginalSolution()));
+}
+
+void BranchAndPrice::solveColumnGeneration() {
+    this->startTime = std::chrono::steady_clock::now();
+
+    std::cout << "it   |     obj       | time" << std::endl;
+
+    for (int64_t it = 0; true; it++) {
         this->masterModel.solve();
         const IloNumArray& prices = this->masterModel.getPrices();
+
+        const auto now = std::chrono::steady_clock::now();
+        const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->startTime).count();
+        std::cout << std::format("{:4d} | {:13.2f} | {:6d}", it, this->masterModel.getObjectiveValue(), duration)
+                  << std::endl;
 
         this->pricing.solve(prices);
         const std::vector<std::vector<int64_t> >& qPaths = this->pricing.getSolutionQPaths();
@@ -22,5 +41,10 @@ void BranchAndPrice::solve() {
         }
     }
 
+    this->endTime = std::chrono::steady_clock::now();
+    const auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(this->endTime - this->startTime).count();
+
     std::cout << "Objective value: " << this->masterModel.getObjectiveValue() << std::endl;
+    std::cout << "Duration: " << duration << " ms" << std::endl;
 }
