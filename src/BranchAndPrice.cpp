@@ -1,20 +1,21 @@
 #include "BranchAndPrice.h"
 
-#include "CapacityCuts.h"
-
 BranchAndPrice::BranchAndPrice(const Instance& instance)
     : instance(instance)
     , masterModel(instance)
     , pricing(instance)
-    , capacityCuts(instance, masterModel) {}
+    , cutsSeparator(instance) {}
 
 BranchAndPrice::~BranchAndPrice() {}
 
 void BranchAndPrice::solve() {
+    bool hasNewCuts = false;
     do {
+        this->cutsSeparator.applyNewCutsTo(this->masterModel);
         this->solveColumnGeneration();
-    } while (false);  // !fixme capacity cuts are not working
-    // } while (this->capacityCuts.separate(this->masterModel.getOriginalSolution()));
+        // !fixme capacity cuts are not working
+        // hasNewCuts = this->cutsSeparator.capacityCuts(this->masterModel.getOriginalSolution());
+    } while (hasNewCuts);
 }
 
 void BranchAndPrice::solveColumnGeneration() {

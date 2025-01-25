@@ -5,7 +5,7 @@
 
 #include <chrono>
 
-#include "CapacityCuts.h"
+#include "CutsSeparator.h"
 #include "Instance.h"
 #include "MasterModel.h"
 #include "Pricing.h"
@@ -22,7 +22,7 @@ class BranchAndPrice {
     const Instance& instance;
     MasterModel masterModel;
     Pricing pricing;
-    CapacityCuts capacityCuts;
+    CutsSeparator cutsSeparator;
 
     std::chrono::steady_clock::time_point startTime;
     std::chrono::steady_clock::time_point endTime;

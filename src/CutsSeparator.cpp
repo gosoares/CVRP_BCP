@@ -1,8 +1,7 @@
-#include "CapacityCuts.h"
+#include "CutsSeparator.h"
 
-CapacityCuts::CapacityCuts(const Instance& instance, MasterModel& masterModel)
+CutsSeparator::CutsSeparator(const Instance& instance)
     : instance(instance)
-    , masterModel(masterModel)
     , demands(new long long[instance.getV()])
     , edgeTail(new long long[instance.getNbEdges() + 1])
     , edgeHead(new long long[instance.getNbEdges() + 1])
@@ -15,16 +14,16 @@ CapacityCuts::CapacityCuts(const Instance& instance, MasterModel& masterModel)
     }
 }
 
-CapacityCuts::~CapacityCuts() {
-    delete[] demands;
-    delete[] edgeTail;
-    delete[] edgeHead;
-    delete[] edgeX;
-
-    // todo delete cuts
+CutsSeparator::~CutsSeparator() {
+    delete[] this->demands;
+    delete[] this->edgeTail;
+    delete[] this->edgeHead;
+    delete[] this->edgeX;
+    CMGR_FreeMemCMgr(&(this->existingCuts));
+    CMGR_FreeMemCMgr(&(this->newCuts));
 }
 
-bool CapacityCuts::separate(const std::vector<double>& x) {
+bool CutsSeparator::capacityCuts(const std::vector<double>& x) {
     char integerAndFeasible;
     double maxViolation;
     long long nEdges = 0;  // number of edges with non-zero reduced cost
@@ -60,11 +59,13 @@ bool CapacityCuts::separate(const std::vector<double>& x) {
     if (this->newCuts->Size == 0) return false;
 
     std::cout << "Capacity Cuts Found: " << this->newCuts->Size << std::endl;
-    std::cout << "Existing Capacity Cuts: " << this->existingCuts->Size << std::endl;
+    std::cout << "Existing Cuts: " << this->existingCuts->Size << std::endl;
     std::cout << "Max Violation: " << maxViolation << std::endl;
 
-    this->addCuts();
+    return true;
+}
 
+void CutsSeparator::applyNewCutsTo(MasterModel& masterModel) {
     // for (int64_t c = 0; c < this->newCuts->Size; c++) {
     //     auto cut = this->newCuts->CPL[c];
 
@@ -79,16 +80,6 @@ bool CapacityCuts::separate(const std::vector<double>& x) {
     //     std::cout << "Cut " << c << ": " << lhs << " <= " << cut->RHS << std::endl;
     // }
 
-    // Move new cuts to existing cuts
-    for (int64_t i = 0; i < this->newCuts->Size; i++) {
-        CMGR_MoveCnstr(this->newCuts, this->existingCuts, i, 0);
-    }
-    this->newCuts->Size = 0;
-
-    return true;
-}
-
-void CapacityCuts::addCuts() {
     std::vector<int64_t> edges;
 
     for (int64_t c = 0; c < this->newCuts->Size; c++) {
@@ -102,6 +93,16 @@ void CapacityCuts::addCuts() {
             }
         }
 
-        this->masterModel.addCut(edges, cut->RHS);
+        masterModel.addCut(edges, cut->RHS);
     }
+
+    this->clearNewCuts();
+}
+
+void CutsSeparator::clearNewCuts() {
+    // Move new cuts to existing cuts
+    for (int64_t i = 0; i < this->newCuts->Size; i++) {
+        CMGR_MoveCnstr(this->newCuts, this->existingCuts, i, 0);
+    }
+    this->newCuts->Size = 0;
 }

@@ -10,17 +10,17 @@
 #include "Instance.h"
 #include "MasterModel.h"
 
-class CapacityCuts {
+class CutsSeparator {
    public:
-    CapacityCuts(const Instance& instance, MasterModel& masterModel);
-    ~CapacityCuts();
+    CutsSeparator(const Instance& instance);
+    ~CutsSeparator();
 
     // return true if new cuts are added
-    bool separate(const std::vector<double>& x);
+    bool capacityCuts(const std::vector<double>& x);
+    void applyNewCutsTo(MasterModel& masterModel);
 
    private:
     const Instance& instance;
-    MasterModel& masterModel;
 
     long long maxNbCuts = 999999;
     double tolerance = 1e-6;
@@ -33,7 +33,7 @@ class CapacityCuts {
     CnstrMgrPointer existingCuts;
     CnstrMgrPointer newCuts;
 
-    void addCuts();
+    void clearNewCuts();
 };
 
 #endif

@@ -18,7 +18,7 @@ add_executable(CVRP src/main.cpp
     src/Labels.h src/Labels.cpp
     src/MasterModel.h src/MasterModel.cpp
     src/BranchAndPrice.h src/BranchAndPrice.cpp
-    src/CapacityCuts.h src/CapacityCuts.cpp
+    src/CutsSeparator.h src/CutsSeparator.cpp
 )
 
 add_subdirectory(cvrpsep)
