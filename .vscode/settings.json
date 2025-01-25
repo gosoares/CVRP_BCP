@@ -2,6 +2,7 @@
     "cSpell.words": [
         "argparse",
         "BPNODE",
+        "BRNCHING",
         "CAPSEP",
         "CMGR",
         "Cnstr",
@@ -12,6 +13,7 @@
         "CVRP",
         "cvrpsep",
         "DLOG",
+        "fukasawa",
         "ilocplex",
         "ILOG",
         "Makefiles",

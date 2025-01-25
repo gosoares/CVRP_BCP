@@ -1,5 +1,7 @@
 #include "BranchAndPrice.h"
 
+#include <vector>
+
 BranchAndPrice::BranchAndPrice(const Instance& instance)
     : instance(instance)
     , masterModel(instance)
@@ -13,8 +15,11 @@ void BranchAndPrice::solve() {
     do {
         this->cutsSeparator.applyNewCutsTo(this->masterModel);
         this->solveColumnGeneration();
+        const auto& x = this->masterModel.getOriginalSolution();
+        std::vector<int64_t> branchingSet;
+        // this->cutsSeparator.getBranchingSet(x, branchingSet);
         // !fixme capacity cuts are not working
-        // hasNewCuts = this->cutsSeparator.capacityCuts(this->masterModel.getOriginalSolution());
+        hasNewCuts = this->cutsSeparator.capacityCuts(x);
     } while (hasNewCuts);
 }
 
