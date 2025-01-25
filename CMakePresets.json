@@ -1,5 +1,5 @@
 {
-    "version": 8,
+    "version": 6,
     "configurePresets": [
         {
             "name": "base",
@@ -49,6 +49,14 @@
             }
         },
         {
+            "name": "base-profile",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_CXX_FLAGS": "-O3 -DNDEBUG -pg"
+            }
+        },
+        {
             "name": "base-release",
             "hidden": true,
             "cacheVariables": {
@@ -65,6 +73,14 @@
             ]
         },
         {
+            "name": "linux-profile",
+            "displayName": "Profile (Linux)",
+            "inherits": [
+                "base-linux",
+                "base-profile"
+            ]
+        },
+        {
             "name": "linux-release",
             "displayName": "Release (Linux)",
             "inherits": [
@@ -78,6 +94,14 @@
             "inherits": [
                 "base-mac",
                 "base-debug"
+            ]
+        },
+        {
+            "name": "osx-profile",
+            "displayName": "Profile (macOS)",
+            "inherits": [
+                "base-mac",
+                "base-profile"
             ]
         },
         {
