@@ -73,7 +73,7 @@ bool CutsSeparator::capacityCuts(const std::vector<double>& x) {
 void CutsSeparator::getBranchingSet(const std::vector<double>& x, std::vector<int64_t>& branchingSet) {
     this->loadEdges(x);
 
-    const int64_t maxNbSets = 1;
+    const int64_t maxNbSets = 20;
 
     CnstrMgrPointer sets;
     CMGR_CreateCMgr(&sets, maxNbSets);
@@ -94,33 +94,38 @@ void CutsSeparator::getBranchingSet(const std::vector<double>& x, std::vector<in
     );
 
     branchingSet.clear();
-    assert(sets->Size == 1);
+    // assert(sets->Size == 1);
 
-    const auto& set = sets->CPL[0];
-    for (int64_t j = 1; j <= set->IntListSize; j++) {
-        branchingSet.push_back(set->IntList[j]);
+    std::vector<std::vector<int64_t> > branchingSets;
+
+    for (int64_t i = 0; i < sets->Size; i++) {
+        const auto& set = sets->CPL[i];
+        branchingSets.emplace_back();
+        for (int64_t j = 1; j <= set->IntListSize; j++) {
+            branchingSets.back().push_back(set->IntList[j]);
+        }
     }
     CMGR_FreeMemCMgr(&sets);
 
-    for (int64_t e : this->instance.getEdgeIdxs()) {
-        const auto& edge = this->instance.getEdge(e);
-        std::cout << std::format("x[{},{}] = {}", edge.first, edge.second, x[e]) << std::endl;
-    }
-    std::cout << std::endl;
+    // for (int64_t e : this->instance.getEdgeIdxs()) {
+    //     const auto& edge = this->instance.getEdge(e);
+    //     std::cout << std::format("x[{},{}] = {}", edge.first, edge.second, x[e]) << std::endl;
+    // }
+    // std::cout << std::endl;
 
-    std::cout << "Branching Set: ";
-    for (int64_t j : branchingSet) {
-        std::cout << j << " ";
-    }
-    std::cout << std::endl;
-
-    double xSet = 0;
-    for (int64_t i = 0; i < branchingSet.size(); i++) {
-        for (int64_t j = i + 1; j < branchingSet.size(); j++) {
-            xSet += x[this->instance.getEdgeId(branchingSet[i], branchingSet[j])];
+    std::cout << "Branching Sets: " << std::endl;
+    for (const auto& set : branchingSets) {
+        for (int64_t j : set) {
+            std::cout << j << " ";
         }
+        double xSet = 0;
+        for (int64_t i = 0; i < set.size(); i++) {
+            for (int64_t j = i + 1; j < set.size(); j++) {
+                xSet += x[this->instance.getEdgeId(set[i], set[j])];
+            }
+        }
+        std::cout << "xSet: " << xSet << std::endl;
     }
-    std::cout << "xSet: " << xSet << std::endl;
 }
 
 void CutsSeparator::applyNewCutsTo(MasterModel& masterModel) {
@@ -144,16 +149,15 @@ void CutsSeparator::applyNewCutsTo(MasterModel& masterModel) {
 }
 
 void CutsSeparator::loadEdges(const std::vector<double>& x) {
+    // const int64_t depotId = 0;
     const int64_t depotId = this->instance.getV();
 
     this->nEdges = 0;
     for (int64_t e : this->instance.getEdgeIdxs()) {
         if (x[e] < this->tolerance) continue;
 
-        const auto& edge = this->instance.getEdge(e);
-        if (edge.first == 0 || edge.second == 0) continue;
-
         this->nEdges++;
+        const auto& edge = this->instance.getEdge(e);
         this->edgeTail[this->nEdges] = edge.second == 0 ? depotId : edge.second;
         this->edgeHead[this->nEdges] = edge.first == 0 ? depotId : edge.first;
         this->edgeX[this->nEdges] = x[e];
