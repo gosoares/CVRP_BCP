@@ -18,7 +18,6 @@ void BranchAndPrice::solve() {
         const auto& x = this->masterModel.getOriginalSolution();
         std::vector<int64_t> branchingSet;
         this->cutsSeparator.getBranchingSet(x, branchingSet);
-        // !fixme capacity cuts are not working
         hasNewCuts = this->cutsSeparator.capacityCuts(x);
     } while (hasNewCuts);
 }
