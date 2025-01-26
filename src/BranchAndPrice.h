@@ -8,6 +8,7 @@
 #include "CutsSeparator.h"
 #include "Instance.h"
 #include "MasterModel.h"
+#include "Node.h"
 #include "Pricing.h"
 
 class BranchAndPrice {
@@ -16,7 +17,8 @@ class BranchAndPrice {
     ~BranchAndPrice();
 
     void solve();
-    void solveColumnGeneration();
+    const std::vector<double>& solveNode(Node& node);
+    void solveColumnGeneration(Node& node);
 
    private:
     const Instance& instance;
@@ -24,8 +26,18 @@ class BranchAndPrice {
     Pricing pricing;
     CutsSeparator cutsSeparator;
 
+    double upperBound;
+    std::vector<double> bestSolution;
+
+    // statistics
+    int64_t nSolvedNodes;
+    int64_t nextNodeId;
     std::chrono::steady_clock::time_point startTime;
     std::chrono::steady_clock::time_point endTime;
+
+    bool isIntegral(const std::vector<double>& x) const;
+
+    void printLogLine(const Node& node, int64_t nOpenNodes) const;
 };
 
 #endif

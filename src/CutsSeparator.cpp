@@ -70,7 +70,7 @@ bool CutsSeparator::capacityCuts(const std::vector<double>& x) {
     return !integerAndFeasible && this->newCuts->Size > 0 && maxViolation > 1e-6;
 }
 
-void CutsSeparator::getBranchingSet(const std::vector<double>& x, std::vector<int64_t>& branchingSet) {
+const std::vector<int64_t>& CutsSeparator::getBranchingSet(const std::vector<double>& x) {
     this->loadEdges(x);
 
     const int64_t maxNbSets = 1;
@@ -94,9 +94,9 @@ void CutsSeparator::getBranchingSet(const std::vector<double>& x, std::vector<in
     );
 
     const auto& set = sets->CPL[0];
-    branchingSet.clear();
+    this->branchingSet.clear();
     for (int64_t i = 1; i <= set->IntListSize; i++) {
-        branchingSet.push_back(set->IntList[i]);
+        this->branchingSet.push_back(set->IntList[i]);
     }
     CMGR_FreeMemCMgr(&sets);
 
@@ -110,6 +110,8 @@ void CutsSeparator::getBranchingSet(const std::vector<double>& x, std::vector<in
     //     }
     // }
     // std::cout << "  Score: " << xSet << std::endl;
+
+    return this->branchingSet;
 }
 
 void CutsSeparator::applyNewCutsTo(MasterModel& masterModel) {

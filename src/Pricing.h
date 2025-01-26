@@ -15,7 +15,7 @@ class Pricing {
    public:
     Pricing(const Instance& instance);
 
-    void solve(const IloNumArray& prices);
+    double solve(const IloNumArray& prices);
 
     const std::vector<std::vector<int64_t> >& getSolutionQPaths() const { return this->solutionQPaths; }
 

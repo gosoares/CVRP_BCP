@@ -15,7 +15,7 @@ Pricing::Pricing(const Instance& instance)
     }
 }
 
-void Pricing::solve(const IloNumArray& prices) {
+double Pricing::solve(const IloNumArray& prices) {
     this->initialize();
     int64_t totalDemand;
     double totalCost;
@@ -40,6 +40,8 @@ void Pricing::solve(const IloNumArray& prices) {
         }
     }
 
+    double globalBestReducedCost = std::numeric_limits<double>::infinity();
+
     // for each vertex v get the least costly walk that reaches v using total demand exactly C
     // if it has a negative reduced cost, add it to the list of negative reduced cost paths
     for (int64_t v : this->instance.getClientIdxs()) {
@@ -60,6 +62,10 @@ void Pricing::solve(const IloNumArray& prices) {
             }
         }
 
+        if (bestCost < globalBestReducedCost) {
+            globalBestReducedCost = bestCost;
+        }
+
         // if it has a negative reduced cost, add it to the list of negative reduced cost paths
         if (bestCost > -1e-6) continue;
 
@@ -71,6 +77,8 @@ void Pricing::solve(const IloNumArray& prices) {
             qPathEdges.push_back(instance.getEdgeId(current->previous->vertex, current->vertex));
         }
     }
+
+    return globalBestReducedCost;
 }
 
 void Pricing::initialize() {

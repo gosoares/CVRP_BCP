@@ -17,7 +17,7 @@ class CutsSeparator {
     // return true if new cuts are found
     bool capacityCuts(const std::vector<double>& x);
 
-    void getBranchingSet(const std::vector<double>& x, std::vector<int64_t>& branchingSet);
+    const std::vector<int64_t>& getBranchingSet(const std::vector<double>& x);
 
     void applyNewCutsTo(MasterModel& masterModel);
 
@@ -36,6 +36,8 @@ class CutsSeparator {
 
     CnstrMgrPointer existingCuts;
     CnstrMgrPointer newCuts;
+
+    std::vector<int64_t> branchingSet;
 
     void loadEdges(const std::vector<double>& x);
     void clearNewCuts();

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <set>
 
 int64_t gcd(int64_t a, int64_t b) {
     if (b == 0) {
@@ -77,7 +78,8 @@ Instance::Instance(const std::string& filename) {
 
     // Get number of vehicles from filename
     this->nbVehicles = std::stoll(
-        filename.substr(filename.find_last_of('-') + 2, filename.find_last_of('.') - filename.find_last_of('-') - 2));
+        filename.substr(filename.find_last_of('-') + 2, filename.find_last_of('.') - filename.find_last_of('-') - 2)
+    );
 
     // normalize demands by the greatest common divisor
     this->demandsGcd = this->vehicleCapacity;
@@ -88,6 +90,22 @@ Instance::Instance(const std::string& filename) {
     for (int64_t v : this->getVertexIdxs()) {
         this->demands[v] /= this->demandsGcd;
     }
+}
+
+const std::vector<int64_t> Instance::getCutSet(const std::vector<int64_t>& S) const {
+    std::vector<int64_t> cutSet;
+    std::set<int64_t> nS(this->vertexIdxs.begin(), this->vertexIdxs.end());
+    for (int64_t v : S) {
+        nS.erase(v);
+    }
+
+    for (int64_t u : S) {
+        for (int64_t w : nS) {
+            cutSet.push_back(this->edgeIds[u][w]);
+        }
+    }
+
+    return cutSet;
 }
 
 void Instance::readCoordinatesListInstance(std::ifstream& file) {

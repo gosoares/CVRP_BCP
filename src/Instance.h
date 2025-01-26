@@ -28,6 +28,8 @@ class Instance {
     const std::vector<std::pair<int64_t, int64_t> >& getEdges() const { return this->edges; }
     int64_t getEdgeId(int64_t i, int64_t j) const { return this->edgeIds[i][j]; };
 
+    const std::vector<int64_t> getCutSet(const std::vector<int64_t>& S) const;
+
     // for iteration purposes
     const std::vector<int64_t>& getClientIdxs() const { return this->clientIdxs; }
     const std::vector<int64_t>& getVertexIdxs() const { return this->vertexIdxs; }
