@@ -20,6 +20,7 @@ MasterModel::MasterModel(const Instance& instance)
     , cplex(model)
     , objective(IloAdd(model, IloMinimize(env)))
     , constraints(env, instance.getNbEdges())
+    , branchConstraints(env, instance.getNbEdges())
     , lambdas(env)
     , edgeLambdas(env)
     , prices(env, instance.getNbEdges())
@@ -88,19 +89,10 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
     lambda.setName(std::format("l_{}", lambdaIdx).c_str());
     this->lambdas.add(lambda);
 
-    std::map<int64_t, int64_t> constraintCoef;
+    for (const auto& el : edgesCount) this->edgeLambdas[el.first] += el.second * lambda;
 
-    for (const auto& el : edgesCount) {
-        this->edgeLambdas[el.first] += el.second * lambda;
-        for (const auto& c : this->constraints.forEdge(el.first)) {
-            constraintCoef.try_emplace(c.id(), 0);
-            constraintCoef[c.id()] += el.second;
-        }
-    }
-
-    for (const auto& el : constraintCoef) {
-        this->constraints[el.first].setLinearCoef(lambda, el.second);
-    }
+    this->constraints.addColumn(lambda, edgesCount);
+    this->branchConstraints.addColumn(lambda, edgesCount);
 }
 
 void MasterModel::addCut(const std::vector<int64_t>& edges, double rhs) {
@@ -114,32 +106,24 @@ void MasterModel::addCut(const std::vector<int64_t>& edges, double rhs) {
     expr.end();
 }
 
-IloRange MasterModel::applyBranchConstraint(const BranchConstraint& constraint) {
+void MasterModel::applyBranchConstraint(const BranchConstraint& constraint) {
     IloExpr expr(env);
     IloRange constr;
     for (int64_t e : constraint.edges) {
         expr += this->edgeLambdas[e];
     }
     constr = constraint.isLeft() ? IloAdd(this->model, expr == 2) : IloAdd(this->model, expr >= 4);
+    this->branchConstraints.add(constr, constraint.edges);
     expr.end();
-
-    return constr;
 }
 
-IloRangeArray MasterModel::applyBranchConstraints(const std::vector<BranchConstraint>& constraints) {
-    IloRangeArray bConstraints(this->env);
+void MasterModel::applyBranchConstraints(const std::vector<BranchConstraint>& constraints) {
     for (const auto& c : constraints) {
-        bConstraints.add(this->applyBranchConstraint(c));
+        this->applyBranchConstraint(c);
     }
-    return bConstraints;
 }
 
-void MasterModel::clearBranchConstraints(IloRangeArray& constraints) {
-    for (int i = 0; i < constraints.getSize(); i++) {
-        this->model.remove(constraints[i]);
-    }
-    constraints.end();
-}
+void MasterModel::clearBranchConstraints() { this->branchConstraints.clearFrom(this->model); }
 
 const std::vector<double>& MasterModel::getSolution() {
     this->solution.resize(this->lambdas.getSize());

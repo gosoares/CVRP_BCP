@@ -20,6 +20,7 @@ class MasterModel {
     IloObjective objective;
 
     Constraints constraints;
+    Constraints branchConstraints;
 
     IloNumVarArray lambdas;
     IloExprArray edgeLambdas;
@@ -39,9 +40,9 @@ class MasterModel {
     void solve();
     void addColumn(const std::vector<int64_t>& qRouteEdges);
     void addCut(const std::vector<int64_t>& edges, double rhs);
-    IloRange applyBranchConstraint(const BranchConstraint& constraint);
-    IloRangeArray applyBranchConstraints(const std::vector<BranchConstraint>& constraints);
-    void clearBranchConstraints(IloRangeArray& constraints);
+    void applyBranchConstraint(const BranchConstraint& constraint);
+    void applyBranchConstraints(const std::vector<BranchConstraint>& constraints);
+    void clearBranchConstraints();
 
     const std::vector<double>& getSolution();
     const std::vector<double>& getOriginalSolution();

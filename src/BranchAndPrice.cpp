@@ -75,7 +75,7 @@ void BranchAndPrice::solve() {
 }
 
 const std::vector<double>& BranchAndPrice::solveNode(Node& node) {
-    auto constraints = this->masterModel.applyBranchConstraints(node.getConstraints());
+    this->masterModel.applyBranchConstraints(node.getConstraints());
 
     bool hasNewCuts = false;
     const std::vector<double>* x;
@@ -91,7 +91,7 @@ const std::vector<double>& BranchAndPrice::solveNode(Node& node) {
 
     if (!node.isIntegral() && !node.isInfeasible()) node.setBranched();
 
-    this->masterModel.clearBranchConstraints(constraints);
+    this->masterModel.clearBranchConstraints();
 
     return *x;
 }

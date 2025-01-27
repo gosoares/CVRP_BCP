@@ -1,18 +1,45 @@
 #include "Constraints.h"
 
 Constraints::Constraints(IloEnv& env, int64_t nEdges)
-    : constraints(env)
+    : constraints()
     , edgeConstraints(nEdges, std::vector<int64_t>()) {}
 
 Constraints::~Constraints() { constraints.end(); }
 
 void Constraints::add(const IloRange& constraint, const std::vector<int64_t>& edges) {
-    int64_t consId = this->constraints.getSize();
-    this->constraints.add(constraint);
+    int64_t consId = this->constraints.size();
+    this->constraints.push_back(constraint);
 
     for (int64_t e : edges) {
         this->edgeConstraints[e].push_back(consId);
     }
+}
+
+void Constraints::addColumn(const IloNumVar& lambda, const std::map<int64_t, int64_t>& q) {
+    // q[e] = number of times edge e appears in the route
+    std::map<int64_t, int64_t> constraintCoef;
+
+    for (const auto& el : q) {
+        for (const auto& c : this->forEdge(el.first)) {
+            constraintCoef.try_emplace(c.id(), 0);
+            constraintCoef[c.id()] += el.second;
+        }
+    }
+
+    for (const auto& el : constraintCoef) {
+        this->constraints[el.first].setLinearCoef(lambda, el.second);
+    }
+}
+
+void Constraints::clearFrom(IloModel& model) {
+    for (int64_t e = 0; e < this->edgeConstraints.size(); e++) {
+        this->edgeConstraints[e].clear();
+    }
+    for (IloRange& constraint : this->constraints) {
+        model.remove(constraint);
+        constraint.end();
+    }
+    this->constraints.clear();
 }
 
 IloRange& Constraints::operator[](int64_t i) { return this->constraints[i]; }

@@ -5,21 +5,21 @@
 
 #include <ilcplex/ilocplex.h>
 
+#include <map>
 #include <vector>
 
 class Constraints {
    private:
-    IloRangeArray constraints;
+    std::vector<IloRange> constraints;
     std::vector<std::vector<int64_t> > edgeConstraints;  // edgeConstraints[e] = constraints that has edge e
-
-    IloRangeArray branchConstraints;
-    std::vector<std::vector<int64_t> > edgeBranchConstraints;
 
    public:
     Constraints(IloEnv& env, int64_t nEdges);
     ~Constraints();
 
     void add(const IloRange& constraint, const std::vector<int64_t>& edges);
+    void addColumn(const IloNumVar& lambda, const std::map<int64_t, int64_t>& q);
+    void clearFrom(IloModel& model);
 
     IloRange& operator[](int64_t i);
     const IloRange operator[](int64_t i) const;
