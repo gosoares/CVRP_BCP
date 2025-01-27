@@ -19,8 +19,7 @@ MasterModel::MasterModel(const Instance& instance)
     , model(env)
     , cplex(model)
     , objective(IloAdd(model, IloMinimize(env)))
-    , constraints(env)
-    , edgeConstraints(instance.getNbEdges(), std::vector<int64_t>())
+    , constraints(env, instance.getNbEdges())
     , lambdas(env)
     , edgeLambdas(env)
     , prices(env, instance.getNbEdges())
@@ -34,32 +33,32 @@ MasterModel::MasterModel(const Instance& instance)
         this->edgeLambdas.add(IloExpr(env));
     }
 
+    std::vector<int64_t> constraintEdges;
+
     // ensures that each client is visited exactly once
     for (int64_t v : this->instance.getClientIdxs()) {
-        this->constraints.add(IloAdd(this->model, this->newArtificial() == 2));
-
-        int64_t consId = this->constraints.getSize() - 1;
+        constraintEdges.clear();
         for (int64_t w : this->instance.getVertexIdxs()) {
             if (v == w) continue;
-            this->edgeConstraints[instance.getEdgeId(v, w)].push_back(consId);
+            constraintEdges.push_back(instance.getEdgeId(v, w));
         }
+
+        this->constraints.add(IloAdd(this->model, this->newArtificial() == 2), constraintEdges);
     }
 
     // ensures that K vehicles must leave and enter the depot
-    this->constraints.add(IloAdd(this->model, this->newArtificial() == 2 * instance.getNbVehicles()));
-    int64_t consId = this->constraints.getSize() - 1;
-    for (int64_t w : this->instance.getClientIdxs()) {
-        this->edgeConstraints[instance.getEdgeId(0, w)].push_back(consId);
-    }
+    constraintEdges.clear();
+    for (int64_t w : this->instance.getClientIdxs()) constraintEdges.push_back(instance.getEdgeId(0, w));
+    this->constraints.add(IloAdd(this->model, this->newArtificial() == 2 * instance.getNbVehicles()), constraintEdges);
 
     // ensures that each edge that do not go through the depot is visited at most once
+    constraintEdges.resize(1);
     for (int64_t e : this->instance.getEdgeIdxs()) {
         std::pair<int64_t, int64_t> edge = instance.getEdge(e);
         if (edge.first == 0 || edge.second == 0) continue;
 
-        this->constraints.add(IloAdd(this->model, this->newArtificial() <= 1));
-        int64_t consId = this->constraints.getSize() - 1;
-        this->edgeConstraints[e].push_back(consId);
+        constraintEdges[0] = e;
+        this->constraints.add(IloAdd(this->model, this->newArtificial() <= 1), constraintEdges);
     }
 }
 
@@ -67,7 +66,6 @@ MasterModel::~MasterModel() {
     model.end();
     cplex.end();
     objective.end();
-    constraints.end();
     lambdas.end();
     prices.end();
     artificials.end();
@@ -94,7 +92,7 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
 
     for (const auto& el : edgesCount) {
         this->edgeLambdas[el.first] += el.second * lambda;
-        for (auto c : this->edgeConstraints[el.first]) {
+        for (auto c : this->constraints.forEdge(el.first)) {
             constraintCoef.try_emplace(c, 0);
             constraintCoef[c] += el.second;
         }
@@ -112,13 +110,8 @@ void MasterModel::addCut(const std::vector<int64_t>& edges, double rhs) {
     for (int64_t e : edges) {
         expr += this->edgeLambdas[e];
     }
-    this->constraints.add(IloAdd(this->model, expr <= rhs));
+    this->constraints.add(IloAdd(this->model, expr <= rhs), edges);
     expr.end();
-
-    int64_t consId = this->constraints.getSize() - 1;
-    for (int64_t e : edges) {
-        this->edgeConstraints[e].push_back(consId);
-    }
 }
 
 IloRange MasterModel::applyBranchConstraint(const BranchConstraint& constraint) {
@@ -167,7 +160,7 @@ const IloNumArray& MasterModel::getPrices() {
     for (int64_t e = 0; e < this->instance.getNbEdges(); e++) {
         prices[e] = instance.getDistance(e);
 
-        for (int64_t c : this->edgeConstraints[e]) {
+        for (int64_t c : this->constraints.forEdge(e)) {
             prices[e] -= cplex.getDual(constraints[c]);
         }
     }

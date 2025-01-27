@@ -7,6 +7,7 @@
 
 #include <set>
 
+#include "Constraints.h"
 #include "Instance.h"
 #include "Node.h"
 
@@ -18,8 +19,7 @@ class MasterModel {
     IloCplex cplex;
     IloObjective objective;
 
-    IloRangeArray constraints;
-    std::vector<std::vector<int64_t> > edgeConstraints;  // edgeConstraints[e] = constraints that has edge e
+    Constraints constraints;
 
     IloNumVarArray lambdas;
     IloExprArray edgeLambdas;

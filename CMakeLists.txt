@@ -16,6 +16,7 @@ add_executable(CVRP src/main.cpp
     src/Instance.h src/Instance.cpp
     src/Pricing.h src/Pricing.cpp
     src/Labels.h src/Labels.cpp
+    src/Constraints.h src/Constraints.cpp
     src/MasterModel.h src/MasterModel.cpp
     src/Node.h src/Node.cpp
     src/BranchAndPrice.h src/BranchAndPrice.cpp
