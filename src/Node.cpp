@@ -21,14 +21,15 @@ Node::Node(int64_t id, const Node& parent, const BranchConstraint& constraint)
 Node::~Node() {}
 
 int64_t Node::getId() const { return this->id; };
-int64_t Node::getDepth() const { return this->depth; };
-bool Node::isRoot() const { return this->depth == 0; };
+int64_t Node::getDepth() const { return this->depth; }
+const std::vector<BranchConstraint>& Node::getConstraints() const { return this->constraints; };
 
 double Node::getLowerBound() const { return lowerBound; };
 double Node::getObjectiveValue() const { return objectiveValue; };
 void Node::setLowerBound(double lowerBound) { this->lowerBound = lowerBound; };
 void Node::setObjectiveValue(double objectiveValue) { this->objectiveValue = objectiveValue; };
 
+bool Node::isRoot() const { return this->depth == 0; };
 bool Node::isSolved() const { return this->status != UNPROCESSED; };
 bool Node::isIntegral() const { return this->status == INTEGRAL; };
 bool Node::isInfeasible() const { return this->status == INFEASIBLE; };

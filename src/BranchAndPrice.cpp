@@ -58,14 +58,14 @@ void BranchAndPrice::solve() {
         const std::vector<int64_t>& branchingSet = this->cutsSeparator.getBranchingSet(solution);
         const std::vector<int64_t> cutSet = this->instance.getCutSet(branchingSet);
 
-        openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_LEFT}));
         openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_RIGHT}));
+        openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_LEFT}));
         delete node;
     }
 }
 
 const std::vector<double>& BranchAndPrice::solveNode(Node& node) {
-    // todo apply node constraints
+    auto constraints = this->masterModel.applyBranchConstraints(node.getConstraints());
 
     bool hasNewCuts = false;
     const std::vector<double>* x;
@@ -81,7 +81,7 @@ const std::vector<double>& BranchAndPrice::solveNode(Node& node) {
 
     if (!node.isIntegral() && !node.isInfeasible()) node.setBranched();
 
-    // todo clear node constraints
+    this->masterModel.clearBranchConstraints(constraints);
 
     return *x;
 }
@@ -109,7 +109,7 @@ void BranchAndPrice::solveColumnGeneration(Node& node) {
 
     node.setObjectiveValue(this->masterModel.getObjectiveValue());
     node.setLowerBound(this->masterModel.getObjectiveValue() + reducedCost);
-    if (this->isIntegral(this->masterModel.getOriginalSolution())) node.setIntegral();
+    if (this->isIntegral(this->masterModel.getSolution())) node.setIntegral();
 }
 
 bool BranchAndPrice::isIntegral(const std::vector<double>& x) const {
@@ -124,7 +124,7 @@ void BranchAndPrice::printLogLine(const Node& node, int64_t nOpenNodes) const {
     const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->startTime).count();
     const auto prefix = node.isIntegral() ? "*" : node.isInfeasible() ? "x" : " ";
     std::string best;
-    if (this->upperBound == std::numeric_limits<long>::max()) {
+    if (this->upperBound == std::numeric_limits<double>::infinity()) {
         best = " ----";
     } else {
         const int64_t upperBound = std::round(this->upperBound);

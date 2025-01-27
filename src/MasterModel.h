@@ -8,6 +8,7 @@
 #include <set>
 
 #include "Instance.h"
+#include "Node.h"
 
 class MasterModel {
    private:
@@ -21,8 +22,8 @@ class MasterModel {
     std::vector<std::vector<int64_t> > edgeConstraints;  // edgeConstraints[e] = constraints that has edge e
 
     IloNumVarArray lambdas;
-    std::vector<std::vector<std::pair<int64_t, int64_t> > > edgeLambdas;
-    // edgeLambdas[e] = {lamdaId, q_e} associated with qPaths that has edge e
+    IloExprArray edgeLambdas;
+    // edgeLambdas[e] = x[e] in terms of lambdas i.e. the linear expression that represents x[e]
 
     IloNumArray prices;
     IloNumVarArray artificials;
@@ -38,6 +39,9 @@ class MasterModel {
     void solve();
     void addColumn(const std::vector<int64_t>& qRouteEdges);
     void addCut(const std::vector<int64_t>& edges, double rhs);
+    IloRange applyBranchConstraint(const BranchConstraint& constraint);
+    IloRangeArray applyBranchConstraints(const std::vector<BranchConstraint>& constraints);
+    void clearBranchConstraints(IloRangeArray& constraints);
 
     const std::vector<double>& getSolution();
     const std::vector<double>& getOriginalSolution();

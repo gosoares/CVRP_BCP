@@ -19,15 +19,6 @@ struct BranchConstraint {
 
     bool isLeft() const { return direction == BD_LEFT; }
     bool isRight() const { return direction == BD_RIGHT; }
-
-    BranchConstraint(const std::vector<int64_t>& edges, BranchDirection direction)
-        : edges(edges)
-        , direction(direction) {}
-
-    // move constructor
-    BranchConstraint(BranchConstraint&& other) noexcept
-        : edges(std::move(other.edges))
-        , direction(other.direction) {}
 };
 
 enum NodeStatus { UNPROCESSED, BRANCHED, INTEGRAL, INFEASIBLE };
@@ -40,13 +31,14 @@ class Node {
 
     int64_t getId() const;
     int64_t getDepth() const;
-    bool isRoot() const;
+    const std::vector<BranchConstraint>& getConstraints() const;
 
     double getLowerBound() const;
     double getObjectiveValue() const;
     void setLowerBound(double lowerBound);
     void setObjectiveValue(double objectiveValue);
 
+    bool isRoot() const;
     bool isSolved() const;
     bool isIntegral() const;
     bool isInfeasible() const;

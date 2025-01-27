@@ -22,13 +22,17 @@ MasterModel::MasterModel(const Instance& instance)
     , constraints(env)
     , edgeConstraints(instance.getNbEdges(), std::vector<int64_t>())
     , lambdas(env)
-    , edgeLambdas(instance.getNbEdges(), std::vector<std::pair<int64_t, int64_t> >())
+    , edgeLambdas(env)
     , prices(env, instance.getNbEdges())
     , artificials(env)
     , solution()
     , originalSolution(instance.getNbEdges()) {
     this->cplex.setOut(env.getNullStream());
     this->cplex.setParam(IloCplex::Param::Threads, 1);
+
+    for (int64_t e = 0; e < this->instance.getNbEdges(); e++) {
+        this->edgeLambdas.add(IloExpr(env));
+    }
 
     // ensures that each client is visited exactly once
     for (int64_t v : this->instance.getClientIdxs()) {
@@ -89,7 +93,7 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
     std::map<int64_t, int64_t> constraintCoef;
 
     for (const auto& el : edgesCount) {
-        this->edgeLambdas[el.first].push_back(std::make_pair(lambdaIdx, el.second));
+        this->edgeLambdas[el.first] += el.second * lambda;
         for (auto c : this->edgeConstraints[el.first]) {
             constraintCoef.try_emplace(c, 0);
             constraintCoef[c] += el.second;
@@ -104,16 +108,9 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
 void MasterModel::addCut(const std::vector<int64_t>& edges, double rhs) {
     std::map<int64_t, int64_t> lambdaCoefs;
 
-    for (int64_t e : edges) {
-        for (const auto& el : this->edgeLambdas[e]) {
-            lambdaCoefs.try_emplace(el.first, 0);
-            lambdaCoefs[el.first] += el.second;
-        }
-    }
-
     IloExpr expr(env);
-    for (const auto& el : lambdaCoefs) {
-        expr += el.second * this->lambdas[el.first];
+    for (int64_t e : edges) {
+        expr += this->edgeLambdas[e];
     }
     this->constraints.add(IloAdd(this->model, expr <= rhs));
     expr.end();
@@ -122,6 +119,33 @@ void MasterModel::addCut(const std::vector<int64_t>& edges, double rhs) {
     for (int64_t e : edges) {
         this->edgeConstraints[e].push_back(consId);
     }
+}
+
+IloRange MasterModel::applyBranchConstraint(const BranchConstraint& constraint) {
+    IloExpr expr(env);
+    IloRange constr;
+    for (int64_t e : constraint.edges) {
+        expr += this->edgeLambdas[e];
+    }
+    constr = constraint.isLeft() ? IloAdd(this->model, expr == 2) : IloAdd(this->model, expr >= 4);
+    expr.end();
+
+    return constr;
+}
+
+IloRangeArray MasterModel::applyBranchConstraints(const std::vector<BranchConstraint>& constraints) {
+    IloRangeArray bConstraints(this->env);
+    for (const auto& c : constraints) {
+        bConstraints.add(this->applyBranchConstraint(c));
+    }
+    return bConstraints;
+}
+
+void MasterModel::clearBranchConstraints(IloRangeArray& constraints) {
+    for (int i = 0; i < constraints.getSize(); i++) {
+        this->model.remove(constraints[i]);
+    }
+    constraints.end();
 }
 
 const std::vector<double>& MasterModel::getSolution() {
@@ -133,16 +157,9 @@ const std::vector<double>& MasterModel::getSolution() {
 }
 
 const std::vector<double>& MasterModel::getOriginalSolution() {
-    const auto& solution = this->getSolution();
-
     for (int64_t e : this->instance.getEdgeIdxs()) {
-        this->originalSolution[e] = 0;
-
-        for (const auto& el : this->edgeLambdas[e]) {
-            this->originalSolution[e] += solution[el.first] * el.second;
-        }
+        this->originalSolution[e] = this->cplex.getValue(this->edgeLambdas[e]);
     }
-
     return this->originalSolution;
 }
 
