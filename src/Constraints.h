@@ -12,6 +12,9 @@ class Constraints {
     IloRangeArray constraints;
     std::vector<std::vector<int64_t> > edgeConstraints;  // edgeConstraints[e] = constraints that has edge e
 
+    IloRangeArray branchConstraints;
+    std::vector<std::vector<int64_t> > edgeBranchConstraints;
+
    public:
     Constraints(IloEnv& env, int64_t nEdges);
     ~Constraints();
@@ -19,9 +22,28 @@ class Constraints {
     void add(const IloRange& constraint, const std::vector<int64_t>& edges);
 
     IloRange& operator[](int64_t i);
-    IloRange operator[](int64_t i) const;
+    const IloRange operator[](int64_t i) const;
 
-    const std::vector<int64_t>& forEdge(int64_t e) const;
+    struct EdgeConstraintsIterator {
+        EdgeConstraintsIterator(Constraints& constraints, int64_t edge, int64_t i = 0);
+
+        int64_t id() const;
+        const IloRange& constraint() const;
+
+        const EdgeConstraintsIterator& operator*() const;
+        const EdgeConstraintsIterator& operator++();
+        bool operator!=(const EdgeConstraintsIterator& other);
+
+        EdgeConstraintsIterator begin();
+        EdgeConstraintsIterator end();
+
+       private:
+        Constraints& constraints;
+        int64_t i;
+        int64_t edge;
+    };
+
+    EdgeConstraintsIterator forEdge(int64_t e);
 };
 
 #endif

@@ -92,9 +92,9 @@ void MasterModel::addColumn(const std::vector<int64_t>& qRouteEdges) {  // TODO 
 
     for (const auto& el : edgesCount) {
         this->edgeLambdas[el.first] += el.second * lambda;
-        for (auto c : this->constraints.forEdge(el.first)) {
-            constraintCoef.try_emplace(c, 0);
-            constraintCoef[c] += el.second;
+        for (const auto& c : this->constraints.forEdge(el.first)) {
+            constraintCoef.try_emplace(c.id(), 0);
+            constraintCoef[c.id()] += el.second;
         }
     }
 
@@ -160,8 +160,8 @@ const IloNumArray& MasterModel::getPrices() {
     for (int64_t e = 0; e < this->instance.getNbEdges(); e++) {
         prices[e] = instance.getDistance(e);
 
-        for (int64_t c : this->constraints.forEdge(e)) {
-            prices[e] -= cplex.getDual(constraints[c]);
+        for (const auto& c : this->constraints.forEdge(e)) {
+            prices[e] -= cplex.getDual(c.constraint());
         }
     }
 

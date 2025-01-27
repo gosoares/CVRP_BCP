@@ -58,6 +58,16 @@ void BranchAndPrice::solve() {
         const std::vector<int64_t>& branchingSet = this->cutsSeparator.getBranchingSet(solution);
         const std::vector<int64_t> cutSet = this->instance.getCutSet(branchingSet);
 
+        double xCutSet = 0;
+        for (int64_t e : cutSet) {
+            xCutSet += solution[e];
+        }
+        std::cout << "Branching Set: ";
+        for (int64_t e : branchingSet) {
+            std::cout << e << " ";
+        }
+        std::cout << "  Score: " << xCutSet << std::endl;
+
         openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_RIGHT}));
         openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_LEFT}));
         delete node;
