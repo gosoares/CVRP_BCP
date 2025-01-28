@@ -11,7 +11,7 @@ BranchAndPrice::BranchAndPrice(const Instance& instance)
     , upperBound(std::numeric_limits<double>::infinity())
     , bestSolution()
     , nSolvedNodes(0)
-    , nextNodeId(1) {}
+    , treeSize(0) {}
 
 BranchAndPrice::~BranchAndPrice() {}
 
@@ -20,6 +20,7 @@ void BranchAndPrice::solve() {
 
     std::vector<Node*> openNodes;
     openNodes.push_back(new Node());  // root node
+    treeSize++;
 
     std::cout << " Current Node | Solution Value  |    Nodes       |\n";
     std::cout << "   id | depth |   obj   |  best | solved |  open |  time\n";
@@ -60,8 +61,8 @@ void BranchAndPrice::solve() {
         const std::vector<int64_t>& branchingSet = this->cutsSeparator.getBranchingSet(solution);
         const std::vector<int64_t> cutSet = this->instance.getCutSet(branchingSet);
 
-        openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_RIGHT}));
-        openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_LEFT}));
+        openNodes.push_back(new Node(this->treeSize++, *node, BranchConstraint{cutSet, BD_RIGHT}));
+        openNodes.push_back(new Node(this->treeSize++, *node, BranchConstraint{cutSet, BD_LEFT}));
         delete node;
     }
 }

@@ -31,7 +31,7 @@ class BranchAndPrice {
 
     // statistics
     int64_t nSolvedNodes;
-    int64_t nextNodeId;
+    int64_t treeSize;
     std::chrono::steady_clock::time_point startTime;
     std::chrono::steady_clock::time_point endTime;
 
