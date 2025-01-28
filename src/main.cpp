@@ -15,7 +15,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const Instance instance(program.get("instance"));
+    std::string instanceFile = program.get("instance");
+    size_t slashPos = instanceFile.find_last_of('/');
+    slashPos = slashPos == std::string::npos ? 0 : slashPos + 1;
+
+    std::cout << "Solving: " << instanceFile.substr(slashPos, instanceFile.find_last_of(".") - slashPos) << std::endl
+              << std::endl;
+
+    const Instance instance(instanceFile);
     BranchAndPrice branchAndPrice(instance);
     branchAndPrice.solve();
 
