@@ -124,7 +124,9 @@ void CutsSeparator::loadEdges(const std::vector<double>& x) {
 void CutsSeparator::clearNewCuts() {
     // Move new cuts to existing cuts
     for (int64_t i = 0; i < this->newCuts->Size; i++) {
-        CMGR_MoveCnstr(this->newCuts, this->existingCuts, i, 0);
+        // TODO verify this makes the algorithm return previous cuts that are not violated anymore
+        // CMGR_MoveCnstr(this->newCuts, this->existingCuts, i, 0);
+        CMGR_ClearCnstr(this->newCuts, i);
     }
     this->newCuts->Size = 0;
 }
