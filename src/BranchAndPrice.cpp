@@ -11,7 +11,7 @@ BranchAndPrice::BranchAndPrice(const Instance& instance)
     , upperBound(std::numeric_limits<double>::infinity())
     , bestSolution()
     , nSolvedNodes(0)
-    , nextNodeId(0) {}
+    , nextNodeId(1) {}
 
 BranchAndPrice::~BranchAndPrice() {}
 
@@ -36,14 +36,16 @@ void BranchAndPrice::solve() {
 
         const std::vector<double>& solution = this->solveNode(*node);
         this->nSolvedNodes++;
-        this->printLogLine(*node, openNodes.size());
+
+        const bool boundPruned = ceil(node->getLowerBound() - 1e-6) >= this->upperBound - 1e-6;
+        this->printLogLine(*node, openNodes.size(), boundPruned);
 
         if (node->isInfeasible()) {
             delete node;
             continue;  // pruned by infeasibility
         };
 
-        if (ceil(node->getObjectiveValue() - 1e-6) >= this->upperBound - 1e-6) {
+        if (boundPruned) {
             delete node;
             continue;  // pruned by bound
         }
@@ -57,16 +59,6 @@ void BranchAndPrice::solve() {
 
         const std::vector<int64_t>& branchingSet = this->cutsSeparator.getBranchingSet(solution);
         const std::vector<int64_t> cutSet = this->instance.getCutSet(branchingSet);
-
-        double xCutSet = 0;
-        for (int64_t e : cutSet) {
-            xCutSet += solution[e];
-        }
-        std::cout << "Branching Set: ";
-        for (int64_t e : branchingSet) {
-            std::cout << e << " ";
-        }
-        std::cout << "  Score: " << xCutSet << std::endl;
 
         openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_RIGHT}));
         openNodes.push_back(new Node(this->nextNodeId++, *node, BranchConstraint{cutSet, BD_LEFT}));
@@ -129,10 +121,10 @@ bool BranchAndPrice::isIntegral(const std::vector<double>& x) const {
     return true;
 }
 
-void BranchAndPrice::printLogLine(const Node& node, int64_t nOpenNodes) const {
+void BranchAndPrice::printLogLine(const Node& node, int64_t nOpenNodes, bool boundPruned) const {
     const auto now = std::chrono::steady_clock::now();
     const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - this->startTime).count();
-    const auto prefix = node.isIntegral() ? "*" : node.isInfeasible() ? "x" : " ";
+    const auto prefix = node.isIntegral() ? "*" : node.isInfeasible() ? "x" : boundPruned ? "p" : " ";
     std::string best;
     if (this->upperBound == std::numeric_limits<double>::infinity()) {
         best = " ----";
@@ -140,7 +132,7 @@ void BranchAndPrice::printLogLine(const Node& node, int64_t nOpenNodes) const {
         const int64_t upperBound = std::round(this->upperBound);
         best = std::format("{:5d}", upperBound);
     }
-    std::string line = std::format(
+    std::cout << std::format(
         "{:s}{:4d} | {:5d} | {:7.2f} | {:s} | {:6d} | {:4d} | {:6d}\n",
         prefix,
         node.getId(),
@@ -151,5 +143,4 @@ void BranchAndPrice::printLogLine(const Node& node, int64_t nOpenNodes) const {
         nOpenNodes,
         duration
     );
-    std::cout << line;
 }

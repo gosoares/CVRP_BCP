@@ -37,7 +37,7 @@ class BranchAndPrice {
 
     bool isIntegral(const std::vector<double>& x) const;
 
-    void printLogLine(const Node& node, int64_t nOpenNodes) const;
+    void printLogLine(const Node& node, int64_t nOpenNodes, bool boundPruned) const;
 };
 
 #endif

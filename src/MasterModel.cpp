@@ -28,6 +28,7 @@ MasterModel::MasterModel(const Instance& instance)
     , solution()
     , originalSolution(instance.getNbEdges()) {
     this->cplex.setOut(env.getNullStream());
+    this->cplex.setWarning(env.getNullStream());
     this->cplex.setParam(IloCplex::Param::Threads, 1);
 
     for (int64_t e = 0; e < this->instance.getNbEdges(); e++) {
@@ -145,6 +146,9 @@ const IloNumArray& MasterModel::getPrices() {
         prices[e] = instance.getDistance(e);
 
         for (const auto& c : this->constraints.forEdge(e)) {
+            prices[e] -= cplex.getDual(c.constraint());
+        }
+        for (const auto& c : this->branchConstraints.forEdge(e)) {
             prices[e] -= cplex.getDual(c.constraint());
         }
     }

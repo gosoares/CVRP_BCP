@@ -13,7 +13,7 @@ Node::Node(int64_t id, const Node& parent, const BranchConstraint& constraint)
     , depth(parent.depth + 1)
     , constraints(parent.constraints)
     , status(UNPROCESSED)
-    , lowerBound(-std::numeric_limits<double>::infinity())
+    , lowerBound(parent.lowerBound)
     , objectiveValue(std::numeric_limits<double>::infinity()) {
     constraints.push_back(constraint);
 }

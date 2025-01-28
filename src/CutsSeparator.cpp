@@ -49,24 +49,6 @@ bool CutsSeparator::capacityCuts(const std::vector<double>& x) {
         this->newCuts
     );
 
-    // std::cout << "Capacity Cuts Found: " << this->newCuts->Size << std::endl;
-    // std::cout << "Existing Cuts: " << this->existingCuts->Size << std::endl;
-    // std::cout << "Max Violation: " << maxViolation << std::endl;
-
-    // for (int64_t c = 0; c < this->newCuts->Size; c++) {
-    //     auto cut = this->newCuts->CPL[c];
-
-    //     double lhs = 0;
-    //     for (int64_t i = 1; i <= cut->IntListSize; i++) {
-    //         int64_t tail = cut->IntList[i];
-    //         for (int64_t j = i + 1; j <= cut->IntListSize; j++) {
-    //             lhs += x[this->instance.getEdgeId(tail, cut->IntList[j])];
-    //         }
-    //     }
-
-    //     std::cout << "Cut " << c << ": " << lhs << " <= " << cut->RHS << std::endl;
-    // }
-
     return !integerAndFeasible && this->newCuts->Size > 0 && maxViolation > 1e-6;
 }
 
@@ -99,17 +81,6 @@ const std::vector<int64_t>& CutsSeparator::getBranchingSet(const std::vector<dou
         this->branchingSet.push_back(set->IntList[i]);
     }
     CMGR_FreeMemCMgr(&sets);
-
-    // std::cout << "Branching Set: ";
-    // double xSet = 0;
-    // for (int64_t i = 1; i <= set->IntListSize; i++) {
-    //     std::cout << set->IntList[i] << " ";
-    //     xSet += this->sumVertexXs[set->IntList[i]];
-    //     for (int64_t j = i + 1; j <= set->IntListSize; j++) {
-    //         xSet -= 2 * x[this->instance.getEdgeId(set->IntList[i], set->IntList[j])];
-    //     }
-    // }
-    // std::cout << "  Score: " << xSet << std::endl;
 
     return this->branchingSet;
 }
