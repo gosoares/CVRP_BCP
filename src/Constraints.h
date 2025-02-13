@@ -14,7 +14,7 @@ class Constraints {
     std::vector<std::vector<int64_t> > edgeConstraints;  // edgeConstraints[e] = constraints that has edge e
 
    public:
-    Constraints(IloEnv& env, int64_t nEdges);
+    Constraints(int64_t nEdges);
     ~Constraints();
 
     void add(const IloRange& constraint, const std::vector<int64_t>& edges);

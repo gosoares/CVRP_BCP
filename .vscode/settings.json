@@ -114,4 +114,5 @@
         "stop_token": "cpp",
         "codecvt": "cpp"
     },
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
 }

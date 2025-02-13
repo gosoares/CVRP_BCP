@@ -1,6 +1,6 @@
 #include "Constraints.h"
 
-Constraints::Constraints(IloEnv& env, int64_t nEdges)
+Constraints::Constraints(int64_t nEdges)
     : constraints()
     , edgeConstraints(nEdges, std::vector<int64_t>()) {}
 
