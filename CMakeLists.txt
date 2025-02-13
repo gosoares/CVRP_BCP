@@ -12,6 +12,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(argparse)
 
+# find and include Boost
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
 add_executable(CVRP src/main.cpp
     src/Instance.h src/Instance.cpp
     src/Pricing.h src/Pricing.cpp
@@ -26,4 +30,4 @@ add_executable(CVRP src/main.cpp
 add_subdirectory(cvrpsep)
 target_include_directories(CVRP PRIVATE cvrpsep)
 
-target_link_libraries(CVRP ilocplex concert cplex m pthread argparse cvrpsep)
+target_link_libraries(CVRP ilocplex concert cplex m pthread argparse cvrpsep ${Boost_LIBRARIES})

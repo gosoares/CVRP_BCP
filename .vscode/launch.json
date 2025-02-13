@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/out/build/${command:cmake.activeConfigurePresetName}/CVRP",
             "args": [
-                "instances/A/A-n37-k5.vrp"
+                "instances/P/P-n50-k7.vrp"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

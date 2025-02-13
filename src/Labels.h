@@ -3,28 +3,32 @@
 
 #pragma once
 
+#include <boost/dynamic_bitset.hpp>
 #include <cstdint>
-#include <vector>
+#include <list>  // Changed from vector
 
 struct Label {
     const int64_t vertex;
     const double cost;
     const Label* previous;
+    boost::dynamic_bitset<> forbidden;
+
+    bool forbiddenDominates(const Label* other) const {
+        return (other->forbidden & this->forbidden) == this->forbidden;
+    }
 };
 
-class Labels {
+class LabelBucket {
    public:
-    Labels(int64_t vertex, int64_t maxLabels = 2);
-    ~Labels();
+    LabelBucket(int64_t vertex);
+    ~LabelBucket();
 
     // add the corresponding label if it has space or if it is better than any other label
-    void add(double cost, const Label* previous);
+    void add(double cost, boost::dynamic_bitset<> forbidden, const Label* previous);
 
-    const Label* operator[](int64_t index) const { return this->labels[index]; }
+    const std::list<Label*>& getLabels() const { return this->labels; }
 
     const Label* getBetter() const { return this->labels.front(); }
-
-    const Label* getBestLabelToExtendTo(int64_t vertex) const;
 
     int64_t size() const { return this->labels.size(); }
     void clear();
@@ -32,9 +36,8 @@ class Labels {
 
    private:
     const int64_t vertex;
-    const int64_t maxLabels;
 
-    std::vector<Label*> labels;
+    std::list<Label*> labels;  // Changed from vector
 };
 
 #endif

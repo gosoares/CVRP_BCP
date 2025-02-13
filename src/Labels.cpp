@@ -1,51 +1,45 @@
 #include "Labels.h"
 
-Labels::Labels(int64_t vertex, int64_t maxLabels)
-    : vertex(vertex)
-    , maxLabels(maxLabels) {};
+LabelBucket::LabelBucket(int64_t vertex)
+    : vertex(vertex) {}
 
-Labels::~Labels() {
+LabelBucket::~LabelBucket() {
     for (Label* label : this->labels) {
         delete label;
     }
     this->labels.clear();
 }
 
-void Labels::add(double cost, const Label* previous) {
-    int64_t insertIndex = this->labels.size();
-    while (insertIndex > 0 && this->labels[insertIndex - 1]->cost > cost) {
-        insertIndex--;
-    }
+void LabelBucket::add(double cost, boost::dynamic_bitset<> forbidden, const Label* previous) {
+    Label* newLabel = new Label{vertex, cost, previous, forbidden};
 
-    if (this->labels.size() < this->maxLabels) {  // has space to insert without removing another
-        if (insertIndex == this->labels.size()) {
-            this->labels.push_back(new Label{this->vertex, cost, previous});
-        } else {
-            this->labels.insert(this->labels.begin() + insertIndex, new Label{this->vertex, cost, previous});
+    // Find insertion position and check if newLabel is dominated
+    auto it = this->labels.begin();
+    for (; it != this->labels.end(); ++it) {
+        if ((*it)->cost > newLabel->cost) break;
+
+        if ((*it)->forbiddenDominates(newLabel)) {
+            delete newLabel;
+            return;
         }
-        return;
-    }
-    if (insertIndex == this->labels.size()) return;  // its not better than any label
-
-    // shift labels to the right
-    delete this->labels.back();
-    for (int64_t i = this->labels.size() - 2; i >= insertIndex; i--) {
-        this->labels[i + 1] = this->labels[i];
     }
 
-    this->labels[insertIndex] = new Label{this->vertex, cost, previous};
+    // Insert the new label at the found position
+    it = this->labels.insert(it, newLabel);
+
+    // Check if newLabel dominates any existing labels after insertion point
+    ++it;
+    while (it != this->labels.end()) {
+        if (newLabel->forbiddenDominates(*it)) {
+            delete *it;
+            it = this->labels.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
-const Label* Labels::getBestLabelToExtendTo(int64_t vertex) const {
-    int64_t index = 0;
-    while (index < this->labels.size() && this->labels[index]->previous != nullptr &&
-           this->labels[index]->previous->vertex == vertex) {
-        index++;
-    }
-    return index == this->labels.size() ? nullptr : this->labels[index];
-}
-
-void Labels::clear() {
+void LabelBucket::clear() {
     for (Label* label : this->labels) {
         delete label;
     }

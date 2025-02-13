@@ -1,16 +1,35 @@
 #include "Pricing.h"
 
+#include <algorithm>
 #include <limits>
+
+const int64_t ngSetsSize = 4;  // Number of nearest neighbors to consider
 
 Pricing::Pricing(const Instance& instance)
     : instance(instance)
     , V(instance.getV())
     , C(instance.getVehicleCapacity())
-    , M(C + 1, std::vector<Labels>()) {
+    , ngSets(instance.getV(), boost::dynamic_bitset<>(instance.getV()))
+    , M(C + 1, std::vector<LabelBucket>()) {
+    // Calculate the ng-sets for each vertex
+    for (int64_t v = 0; v < this->V; ++v) {
+        std::vector<std::pair<int64_t, int64_t>> distances;
+        for (int64_t w = 0; w < this->V; ++w) {
+            if (v != w) {
+                distances.emplace_back(this->instance.getDistance(this->instance.getEdgeId(v, w)), w);
+            }
+        }
+        std::sort(distances.begin(), distances.end());
+        for (int i = 0; i < std::min(ngSetsSize, static_cast<int64_t>(ngSets[v].size())); ++i) {
+            ngSets[v].set(distances[i].second);
+        }
+    }
+
+    // initialize the label buckets
     for (int64_t d = 0; d <= this->C; d++) {
         this->M[d].reserve(this->V);
         for (int64_t v : this->instance.getVertexIdxs()) {
-            this->M[d].emplace_back(v, 2);
+            this->M[d].emplace_back(v);
         }
     }
 }
@@ -25,17 +44,21 @@ double Pricing::solve(const IloNumArray& prices) {
         for (int64_t v = 0; v < this->V; v++) {
             if (this->M[d][v].empty()) continue;
 
-            for (int64_t w : this->instance.getClientIdxs()) {
+            for (int64_t w : this->instance.getVertexIdxs()) {
                 if (v == w) continue;
 
                 totalDemand = d + this->instance.getDemand(w);
                 if (totalDemand > this->C) continue;
 
-                const Label* label = this->M[d][v].getBestLabelToExtendTo(w);
-                if (label == nullptr) continue;
+                for (const Label* label : this->M[d][v].getLabels()) {
+                    if (label->forbidden.test(w)) continue;
 
-                totalCost = label->cost + prices[instance.getEdgeId(v, w)];
-                this->M[totalDemand][w].add(totalCost, label);
+                    totalCost = label->cost + prices[instance.getEdgeId(v, w)];
+                    boost::dynamic_bitset<> forbidden = label->forbidden & this->ngSets[w];
+                    forbidden.set(w);
+
+                    this->M[totalDemand][w].add(totalCost, forbidden, label);
+                }
             }
         }
     }
@@ -87,7 +110,7 @@ void Pricing::initialize() {
             this->M[d][v].clear();
         }
     }
-    this->M[0][0].add(0, nullptr);
+    this->M[0][0].add(0, boost::dynamic_bitset<>(this->instance.getV()), nullptr);
 
     this->solutionQPaths.clear();
 }
